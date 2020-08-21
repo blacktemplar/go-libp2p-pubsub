@@ -243,6 +243,9 @@ func (ps *peerScore) score(p peer.ID) float64 {
 				deficit := topicParams.MeshMessageDeliveriesThreshold - tstats.meshMessageDeliveries
 				p3 := deficit * deficit
 				topicScore += p3 * topicParams.MeshMessageDeliveriesWeight
+
+				log.Debugf("SCORE: MeshMessageDeliveriesPenalty for peer %s in topic %s, deficit: %s",
+					p, topic, deficit)
 			}
 		}
 
@@ -325,6 +328,8 @@ func (ps *peerScore) AddPenalty(p peer.ID, count int) {
 	}
 
 	pstats.behaviourPenalty += float64(count)
+
+	log.Debugf("SCORE: Add penalty for peer %s, count: %s", p, count)
 }
 
 // periodic maintenance
@@ -663,6 +668,7 @@ func (ps *peerScore) RejectMessage(msg *Message, reason string) {
 	case rejectUnexpectedAuthInfo:
 		fallthrough
 	case rejectSelfOrigin:
+		log.Debugf("SCORE: Rejected message with self origin from peer %s", msg.ReceivedFrom)
 		ps.markInvalidMessageDelivery(msg.ReceivedFrom, msg)
 		return
 
@@ -706,8 +712,10 @@ func (ps *peerScore) RejectMessage(msg *Message, reason string) {
 	// mark the message as invalid and penalize peers that have already forwarded it.
 	drec.status = deliveryInvalid
 
+	log.Debugf("SCORE: Rejected message with reason %s from peer %s", reason, msg.ReceivedFrom)
 	ps.markInvalidMessageDelivery(msg.ReceivedFrom, msg)
 	for p := range drec.peers {
+		log.Debugf("SCORE: Rejected message with reason %s from peer %s", reason, p)
 		ps.markInvalidMessageDelivery(p, msg)
 	}
 
@@ -740,6 +748,8 @@ func (ps *peerScore) DuplicateMessage(msg *Message) {
 
 	case deliveryInvalid:
 		// we no longer track delivery time
+		log.Debugf("SCORE: DuplicateMessage with deliveryInvalid status from peer %s",
+			msg.ReceivedFrom)
 		ps.markInvalidMessageDelivery(msg.ReceivedFrom, msg)
 
 	case deliveryThrottled:
