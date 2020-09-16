@@ -15,6 +15,8 @@ import (
 	"github.com/libp2p/go-libp2p-core/peerstore"
 	"github.com/libp2p/go-libp2p-core/protocol"
 	"github.com/libp2p/go-libp2p-core/record"
+
+	"github.com/davecgh/go-spew/spew"
 )
 
 const (
@@ -221,7 +223,7 @@ func WithPeerScore(params *PeerScoreParams, thresholds *PeerScoreThresholds) Opt
 			return err
 		}
 
-		log.Debugf("INIT_PEER_SCORE: %v", params)
+		log.Debugf("INIT_PEER_SCORE: %s", spew.Sdump(params))
 
 		gs.score = newPeerScore(params)
 		gs.gossipThreshold = thresholds.GossipThreshold
