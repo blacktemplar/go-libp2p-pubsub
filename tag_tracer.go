@@ -58,7 +58,7 @@ type tagTracer struct {
 func newTagTracer(cmgr connmgr.ConnManager) *tagTracer {
 	decayer, ok := connmgr.SupportsDecay(cmgr)
 	if !ok {
-		log.Warnf("connection manager does not support decaying tags, delivery tags will not be applied")
+		log.Debugf("connection manager does not support decaying tags, delivery tags will not be applied")
 	}
 	return &tagTracer{
 		cmgr:      cmgr,
@@ -252,4 +252,5 @@ func (t *tagTracer) RejectMessage(msg *Message, reason string) {
 	}
 }
 
-func (t *tagTracer) RemovePeer(peer.ID) {}
+func (t *tagTracer) RemovePeer(peer.ID)      {}
+func (gt *tagTracer) ThrottlePeer(p peer.ID) {}

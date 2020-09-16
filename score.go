@@ -183,6 +183,52 @@ func newPeerScore(params *PeerScoreParams) *peerScore {
 	}
 }
 
+// SetTopicScoreParams sets new score parameters for a topic.
+// If the topic previously had parameters and the parameters are lowering delivery caps,
+// then the score counters are recapped appropriately.
+// Note: assumes that the topic score parameters have already been validated
+func (ps *peerScore) SetTopicScoreParams(topic string, p *TopicScoreParams) error {
+	ps.Lock()
+	defer ps.Unlock()
+
+	old, exist := ps.params.Topics[topic]
+	ps.params.Topics[topic] = p
+
+	if !exist {
+		return nil
+	}
+
+	// check to see if the counter Caps are being lowered; if that's the case we need to recap them
+	recap := false
+	if p.FirstMessageDeliveriesCap < old.FirstMessageDeliveriesCap {
+		recap = true
+	}
+	if p.MeshMessageDeliveriesCap < old.MeshMessageDeliveriesCap {
+		recap = true
+	}
+	if !recap {
+		return nil
+	}
+
+	// recap counters for topic
+	for _, pstats := range ps.peerStats {
+		tstats, ok := pstats.topics[topic]
+		if !ok {
+			continue
+		}
+
+		if tstats.firstMessageDeliveries > p.FirstMessageDeliveriesCap {
+			tstats.firstMessageDeliveries = p.FirstMessageDeliveriesCap
+		}
+
+		if tstats.meshMessageDeliveries > p.MeshMessageDeliveriesCap {
+			tstats.meshMessageDeliveries = p.MeshMessageDeliveriesCap
+		}
+	}
+
+	return nil
+}
+
 // router interface
 func (ps *peerScore) Start(gs *GossipSubRouter) {
 	if ps == nil {
@@ -641,7 +687,7 @@ func (ps *peerScore) DeliverMessage(msg *Message) {
 
 	// defensive check that this is the first delivery trace -- delivery status should be unknown
 	if drec.status != deliveryUnknown {
-		log.Warnf("unexpected delivery trace: message from %s was first seen %s ago and has delivery status %d", msg.ReceivedFrom, time.Now().Sub(drec.firstSeen), drec.status)
+		log.Debugf("unexpected delivery trace: message from %s was first seen %s ago and has delivery status %d", msg.ReceivedFrom, time.Now().Sub(drec.firstSeen), drec.status)
 		return
 	}
 
@@ -697,7 +743,7 @@ func (ps *peerScore) RejectMessage(msg *Message, reason string) {
 
 	// defensive check that this is the first rejection trace -- delivery status should be unknown
 	if drec.status != deliveryUnknown {
-		log.Warnf("unexpected rejection trace: message from %s was first seen %s ago and has delivery status %d", msg.ReceivedFrom, time.Now().Sub(drec.firstSeen), drec.status)
+		log.Debugf("unexpected rejection trace: message from %s was first seen %s ago and has delivery status %d", msg.ReceivedFrom, time.Now().Sub(drec.firstSeen), drec.status)
 		return
 	}
 
@@ -766,6 +812,8 @@ func (ps *peerScore) DuplicateMessage(msg *Message) {
 		// the message was ignored; do nothing
 	}
 }
+
+func (ps *peerScore) ThrottlePeer(p peer.ID) {}
 
 // message delivery records
 func (d *messageDeliveries) getRecord(id string) *deliveryRecord {
