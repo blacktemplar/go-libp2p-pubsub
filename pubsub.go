@@ -2,6 +2,7 @@ package pubsub
 
 import (
 	"context"
+	b64 "encoding/base64"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -1004,7 +1005,7 @@ func (p *PubSub) pushMsg(msg *Message) {
 
 	// have we already seen and validated this message?
 	id := p.msgID(msg.Message)
-	log.Debugf("incoming message from %s with id %s", src, id)
+	log.Debugf("incoming message from %s with id %s", src, b64.StdEncoding.EncodeToString([]byte(id)))
 	if p.seenMessage(id) {
 		p.tracer.DuplicateMessage(msg)
 		return
