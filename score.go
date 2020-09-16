@@ -467,6 +467,8 @@ func (ps *peerScore) refreshScores() {
 			if tstats.meshMessageDeliveries < ps.params.DecayToZero {
 				tstats.meshMessageDeliveries = 0
 			}
+			log.Debugf("[MMD]: Mesh message deliveries of peer %s in topic %s: %f", p, topic,
+				tstats.meshMessageDeliveries)
 			tstats.meshFailurePenalty *= topicParams.MeshFailurePenaltyDecay
 			if tstats.meshFailurePenalty < ps.params.DecayToZero {
 				tstats.meshFailurePenalty = 0
