@@ -2,6 +2,7 @@ package pubsub
 
 import (
 	"context"
+	b64 "encoding/base64"
 	"fmt"
 	"net"
 	"sync"
@@ -635,7 +636,8 @@ func (ps *peerScore) DeliverMessage(msg *Message) {
 
 	ps.markFirstMessageDelivery(msg.ReceivedFrom, msg)
 
-	drec := ps.deliveries.getRecord(ps.msgID(msg.Message))
+	id := ps.msgID(msg.Message)
+	drec := ps.deliveries.getRecord(id)
 
 	// defensive check that this is the first delivery trace -- delivery status should be unknown
 	if drec.status != deliveryUnknown {
@@ -646,13 +648,17 @@ func (ps *peerScore) DeliverMessage(msg *Message) {
 	// mark the message as valid and reward mesh peers that have already forwarded it to us
 	drec.status = deliveryValid
 	drec.validated = time.Now()
+	peers := make([]string, 0, len(drec.peers))
 	for p := range drec.peers {
+		peers = append(peers, p.Pretty())
 		// this check is to make sure a peer can't send us a message twice and get a double count
 		// if it is a first delivery.
 		if p != msg.ReceivedFrom {
 			ps.markDuplicateMessageDelivery(p, msg, time.Time{})
 		}
 	}
+	log.Debugf("Message validated: Message %s received first from %s and later on from (%v) got validated",
+		b64.StdEncoding.EncodeToString([]byte(id)), msg.ReceivedFrom, peers)
 }
 
 func (ps *peerScore) RejectMessage(msg *Message, reason string) {
