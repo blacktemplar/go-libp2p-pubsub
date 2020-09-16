@@ -1004,6 +1004,7 @@ func (p *PubSub) pushMsg(msg *Message) {
 
 	// have we already seen and validated this message?
 	id := p.msgID(msg.Message)
+	log.Debugf("incoming message from %s with id %s", src, id)
 	if p.seenMessage(id) {
 		p.tracer.DuplicateMessage(msg)
 		return

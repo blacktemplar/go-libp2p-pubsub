@@ -221,6 +221,8 @@ func WithPeerScore(params *PeerScoreParams, thresholds *PeerScoreThresholds) Opt
 			return err
 		}
 
+		log.Debugf("INIT_PEER_SCORE: %v", params)
+
 		gs.score = newPeerScore(params)
 		gs.gossipThreshold = thresholds.GossipThreshold
 		gs.publishThreshold = thresholds.PublishThreshold

@@ -244,7 +244,7 @@ func (ps *peerScore) score(p peer.ID) float64 {
 				p3 := deficit * deficit
 				topicScore += p3 * topicParams.MeshMessageDeliveriesWeight
 
-				log.Debugf("SCORE: MeshMessageDeliveriesPenalty for peer %s in topic %s, deficit: %s",
+				log.Debugf("SCORE: MeshMessageDeliveriesPenalty for peer %s in topic %s, deficit: %f",
 					p, topic, deficit)
 			}
 		}
